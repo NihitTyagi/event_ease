@@ -1,0 +1,13 @@
+/* Import Tailwind's base styles */
+@tailwind base;
+
+/* Inject Tailwind's component classes */
+@tailwind components;
+
+/* Inject Tailwind's utility classes */
+@tailwind utilities;
+
+/* You can add any custom base styles here if needed */
+body {
+  @apply bg-gray-50 text-gray-900;
+}
