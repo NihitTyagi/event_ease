@@ -1,5 +1,5 @@
 const Event = require('../models/EventModel');
-const User = require('../models/UserModel'); // Import the User model
+const User = require('../models/UserModel');
 
 /**
  * Generates a custom event ID in the format: EVT-[MMM][YYYY]-[Random3]
@@ -34,15 +34,34 @@ const createEvent = async (req, res) => {
 };
 
 /**
- * @desc    Get all events
+ * @desc    Get all events, sorted by Upcoming then Ongoing
  * @route   GET /api/events
  * @access  Public
  */
 const getEvents = async (req, res) => {
   try {
-    const events = await Event.find({});
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to the beginning of today
+
+    // 1. Fetch all events that are not completed
+    const events = await Event.find({ date: { $gte: today } });
+
+    // 2. Sort the results in JavaScript based on the virtual 'status' property
+    events.sort((a, b) => {
+      const statusOrder = { 'Upcoming': 1, 'Ongoing': 2 };
+
+      // If the statuses are different, sort by the predefined order (Upcoming first)
+      if (statusOrder[a.status] !== statusOrder[b.status]) {
+        return statusOrder[a.status] - statusOrder[b.status];
+      }
+
+      // If statuses are the same (e.g., both are 'Upcoming'), sort by the event date (soonest first)
+      return new Date(a.date) - new Date(b.date);
+    });
+
     res.json(events);
   } catch (error) {
+    console.error(error.message);
     res.status(500).json({ message: 'Server error while fetching events' });
   }
 };
@@ -136,5 +155,5 @@ module.exports = {
   getEventById,
   updateEvent,
   deleteEvent,
-  getEventAttendees, // Export the new function
+  getEventAttendees,
 };
