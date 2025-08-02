@@ -1,4 +1,5 @@
 const Event = require('../models/EventModel');
+const User = require('../models/UserModel'); // Import the User model
 
 /**
  * Generates a custom event ID in the format: EVT-[MMM][YYYY]-[Random3]
@@ -19,26 +20,15 @@ const generateEventId = (date) => {
  */
 const createEvent = async (req, res) => {
   const { name, description, category, location, date, capacity } = req.body;
-
   try {
     const eventDate = new Date(date);
     const eventId = generateEventId(eventDate);
-
     const event = new Event({
-      eventId,
-      name,
-      description,
-      category,
-      location,
-      date: eventDate,
-      capacity,
-      attendees: [],
+      eventId, name, description, category, location, date: eventDate, capacity, attendees: [],
     });
-
     const createdEvent = await event.save();
     res.status(201).json(createdEvent);
   } catch (error) {
-    console.error(error.message);
     res.status(500).json({ message: 'Server error while creating event' });
   }
 };
@@ -53,7 +43,6 @@ const getEvents = async (req, res) => {
     const events = await Event.find({});
     res.json(events);
   } catch (error) {
-    console.error(error.message);
     res.status(500).json({ message: 'Server error while fetching events' });
   }
 };
@@ -66,14 +55,12 @@ const getEvents = async (req, res) => {
 const getEventById = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
-
     if (event) {
       res.json(event);
     } else {
       res.status(404).json({ message: 'Event not found' });
     }
   } catch (error) {
-    console.error(error.message);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -85,10 +72,8 @@ const getEventById = async (req, res) => {
  */
 const updateEvent = async (req, res) => {
   const { name, description, category, location, date, capacity } = req.body;
-
   try {
     const event = await Event.findById(req.params.id);
-
     if (event) {
       event.name = name || event.name;
       event.description = description || event.description;
@@ -96,14 +81,12 @@ const updateEvent = async (req, res) => {
       event.location = location || event.location;
       event.date = date || event.date;
       event.capacity = capacity || event.capacity;
-
       const updatedEvent = await event.save();
       res.json(updatedEvent);
     } else {
       res.status(404).json({ message: 'Event not found' });
     }
   } catch (error) {
-    console.error(error.message);
     res.status(500).json({ message: 'Server error while updating event' });
   }
 };
@@ -116,18 +99,36 @@ const updateEvent = async (req, res) => {
 const deleteEvent = async (req, res) => {
   try {
     const event = await Event.findById(req.params.id);
-
     if (event) {
-      await event.deleteOne(); // Mongoose v6+ uses deleteOne() on the document
+      await event.deleteOne();
       res.json({ message: 'Event removed' });
     } else {
       res.status(404).json({ message: 'Event not found' });
     }
   } catch (error) {
-    console.error(error.message);
     res.status(500).json({ message: 'Server error while deleting event' });
   }
 };
+
+/**
+ * @desc    Get all attendees for a specific event
+ * @route   GET /api/events/:id/attendees
+ * @access  Private/Admin
+ */
+const getEventAttendees = async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id).populate('attendees', 'username email');
+        if (event) {
+            res.json(event.attendees);
+        } else {
+            res.status(404).json({ message: 'Event not found' });
+        }
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).json({ message: 'Server error while fetching attendees' });
+    }
+};
+
 
 module.exports = {
   createEvent,
@@ -135,4 +136,5 @@ module.exports = {
   getEventById,
   updateEvent,
   deleteEvent,
+  getEventAttendees, // Export the new function
 };
